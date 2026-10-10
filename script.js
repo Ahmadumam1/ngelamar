@@ -51,8 +51,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const fileSizeSpan = document.getElementById('release-filesize-text');
 
   const GITHUB_REPO = 'Ahmadumam1/ngelamar';
-  const FALLBACK_VERSION = 'v1.0.1';
-  const FALLBACK_APK_URL = 'https://github.com/Ahmadumam1/ngelamar/releases/download/v1.0.1/Ngelamar.v1.0.1.apk';
+  const FALLBACK_VERSION = 'v1.0.2';
+  const FALLBACK_APK_URL = 'https://github.com/Ahmadumam1/ngelamar/releases/latest';
 
   async function fetchLatestRelease() {
     try {
@@ -61,7 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
 
       const tagName = data.tag_name || FALLBACK_VERSION;
-      let apkUrl = data.html_url || `https://github.com/${GITHUB_REPO}/releases`;
+      let apkUrl = data.html_url || FALLBACK_APK_URL;
       let apkSize = '~60 MB';
 
       if (data.assets && data.assets.length > 0) {
@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
       console.warn('Using default release info:', err);
       releaseBadges.forEach(badge => badge.textContent = FALLBACK_VERSION);
       downloadLinks.forEach(link => link.setAttribute('href', FALLBACK_APK_URL));
-      if (fileSizeSpan) fileSizeSpan.textContent = '62.6 MB';
+      if (fileSizeSpan) fileSizeSpan.textContent = '60.6 MB';
       if (releaseDateSpan) releaseDateSpan.textContent = 'Terbaru (2026)';
     }
   }
