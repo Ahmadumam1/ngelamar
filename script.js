@@ -9,10 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const themeIcon = document.getElementById('theme-icon');
   const savedTheme = localStorage.getItem('ngelamar-theme') || 'dark';
 
+  const sunIconSvg = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg>`;
+  const moonIconSvg = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>`;
+
   function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', theme);
     if (themeIcon) {
-      themeIcon.textContent = theme === 'light' ? '🌙' : '☀️';
+      themeIcon.innerHTML = theme === 'light' ? moonIconSvg : sunIconSvg;
     }
     localStorage.setItem('ngelamar-theme', theme);
   }
@@ -32,15 +35,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const navMenu = document.getElementById('nav-menu');
 
   if (mobileToggle && navMenu) {
-    mobileToggle.addEventListener('click', () => {
-      navMenu.classList.toggle('active');
+    function toggleMenu(isOpen) {
+      const willOpen = typeof isOpen === 'boolean' ? isOpen : !navMenu.classList.contains('active');
+      navMenu.classList.toggle('active', willOpen);
+      mobileToggle.classList.toggle('active', willOpen);
+      mobileToggle.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+    }
+
+    mobileToggle.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleMenu();
     });
 
     // Close when clicking nav links
-    navMenu.querySelectorAll('.nav-link').forEach(link => {
+    navMenu.querySelectorAll('a').forEach(link => {
       link.addEventListener('click', () => {
-        navMenu.classList.remove('active');
+        toggleMenu(false);
       });
+    });
+
+    // Close when clicking outside
+    document.addEventListener('click', (e) => {
+      if (!navMenu.contains(e.target) && !mobileToggle.contains(e.target)) {
+        toggleMenu(false);
+      }
+    });
+
+    // Close with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && navMenu.classList.contains('active')) {
+        toggleMenu(false);
+      }
     });
   }
 
@@ -106,66 +131,55 @@ document.addEventListener('DOMContentLoaded', () => {
 
   fetchLatestRelease();
 
-  // 4. INTERACTIVE WORKFLOW SIMULATOR
-  const stepTabs = document.querySelectorAll('.step-tab');
-  const previewContents = document.querySelectorAll('.preview-content');
+  // 4. VIDEO PLAYER INTERACTION
+  const videoPlayer = document.getElementById('guide-video-player');
+  const videoOverlay = document.getElementById('video-overlay-preview');
+  const videoPlayBtn = document.getElementById('video-play-btn');
 
-  stepTabs.forEach(tab => {
-    tab.addEventListener('click', () => {
-      const targetStep = tab.getAttribute('data-step');
+  if (videoOverlay && videoPlayer) {
+    function startVideo() {
+      videoOverlay.classList.add('hidden');
+      videoPlayer.play().catch(err => {
+        console.log('Video play interrupted or file not yet loaded:', err);
+      });
+    }
 
-      stepTabs.forEach(t => t.classList.remove('active'));
-      previewContents.forEach(p => p.classList.remove('active'));
+    videoOverlay.addEventListener('click', startVideo);
+    if (videoPlayBtn) {
+      videoPlayBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        startVideo();
+      });
+    }
 
-      tab.classList.add('active');
-      const targetPreview = document.getElementById(`sim-preview-${targetStep}`);
-      if (targetPreview) {
-        targetPreview.classList.add('active');
+    videoPlayer.addEventListener('pause', () => {
+      if (videoPlayer.currentTime === 0 || videoPlayer.ended) {
+        videoOverlay.classList.remove('hidden');
       }
     });
-  });
 
-  // Interactive Status Pills in Simulator
-  const statusBtns = document.querySelectorAll('.status-choice-btn');
-  const liveStatusBadge = document.getElementById('live-sim-status-badge');
-  const liveStatusDesc = document.getElementById('live-sim-status-desc');
-
-  const statusConfigs = {
-    'wishlist': { text: 'Disimpan (Wishlist)', color: '#64748B', desc: 'Lowongan baru disimpan untuk diteliti lebih lanjut.' },
-    'applied': { text: 'Dilamar (Terkirim)', color: '#3B82F6', desc: 'Berkas CV & Portofolio sudah dikirim ke HRD.' },
-    'interview': { text: 'Wawancara (Interview)', color: '#F59E0B', desc: 'Jadwal interview telah disiapkan! Persiapkan diri sebaik mungkin.' },
-    'offering': { text: 'Offering Letter', color: '#10B981', desc: 'Penawaran kerja diterima! Waktunya negosiasi & evaluasi kontrak.' },
-    'accepted': { text: 'Diterima 🎉', color: '#059669', desc: 'Selamat! Kamu resmi bergabung dan menaklukkan proses seleksi!' }
-  };
-
-  statusBtns.forEach(btn => {
-    btn.addEventListener('click', () => {
-      statusBtns.forEach(b => b.classList.remove('selected'));
-      btn.classList.add('selected');
-
-      const statusKey = btn.getAttribute('data-status');
-      const cfg = statusConfigs[statusKey];
-      if (cfg && liveStatusBadge && liveStatusDesc) {
-        liveStatusBadge.textContent = cfg.text;
-        liveStatusBadge.style.backgroundColor = `${cfg.color}22`;
-        liveStatusBadge.style.color = cfg.color;
-        liveStatusBadge.style.border = `1px solid ${cfg.color}55`;
-        liveStatusDesc.textContent = cfg.desc;
-      }
+    videoPlayer.addEventListener('ended', () => {
+      videoOverlay.classList.remove('hidden');
     });
-  });
+  }
+
+
 
   // 5. FAQ ACCORDION
-  const faqItems = document.querySelectorAll('.faq-item');
+  const faqItems = document.querySelectorAll('.faq-item, .faq-row');
   faqItems.forEach(item => {
-    const questionBtn = item.querySelector('.faq-question');
+    const questionBtn = item.querySelector('.faq-question, .faq-trigger');
     if (questionBtn) {
       questionBtn.addEventListener('click', () => {
-        const isOpen = item.classList.contains('open');
+        const isOpen = item.classList.contains('active') || item.classList.contains('open');
         // Close others
-        faqItems.forEach(i => i.classList.remove('open'));
+        faqItems.forEach(i => {
+          i.classList.remove('open');
+          i.classList.remove('active');
+        });
         if (!isOpen) {
           item.classList.add('open');
+          item.classList.add('active');
         }
       });
     }
